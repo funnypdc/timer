@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจับเวลา FN MODEL</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 20px;
+        }
+
+        /* ส่วนหัวและตัวควบคุม */
+        .header-section { margin-bottom: 30px; }
+        .controls-top {
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px;
+        }
+
+        input[type="number"], input[type="text"] {
+            background: #333; border: 1px solid #444; color: white; padding: 8px; border-radius: 4px;
+        }
+
+        button {
+            padding: 10px 16px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold;
+        }
+
+        .btn-start-all { background-color: #2e7d32; color: white; }
+        .btn-stop-all { background-color: #c62828; color: white; }
+        .btn-reset-all { background-color: #424242; color: white; }
+
+        /* Grid ตัวจับเวลา */
+        .timer-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-bottom: 40px;
+        }
+
+        .timer-card {
+            background: #1e1e1e; border: 1px solid #333; padding: 20px; border-radius: 12px; text-align: center;
+        }
+
+        .timer-display { font-size: 1.8rem; font-family: monospace; margin: 10px 0; color: #00e676; }
+
+        /* ปุ่ม Class A B C */
+        .class-selector { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+        .btn-class {
+            width: 45px; height: 40px; background-color: #262626; color: white;
+            border-radius: 6px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-weight: bold;
+        }
+        .btn-class.active { background-color: #2e7d32; }
+
+        /* ปุ่มหลักในแต่ละกล่อง */
+        .btn-main { width: 100%; margin-top: 10px; }
+        .button-group { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-stop { background-color: #c62828; color: white; width: 100%; }
+        .btn-resume { background-color: #2e7d32; color: white; flex: 2; }
+        .btn-clear { background-color: #424242; color: white; flex: 1; }
+
+        /* ส่วนสรุปผลแต่ละโต๊ะ */
+        .summary-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-bottom: 40px;
+        }
+        .summary-card {
+            background: #1e1e1e; border: 1px solid #333; padding: 20px; border-radius: 15px;
+            text-align: center; min-height: 220px; display: flex; flex-direction: column; justify-content: center;
+        }
+        .summary-title {
+            background-color: #2e7d32; color: white; padding: 5px 25px; border-radius: 8px;
+            display: inline-block; margin: 0 auto 15px auto; font-weight: bold;
+        }
+        .summary-card p { margin: 5px 0; font-size: 0.95rem; }
+        .highlight { color: #00e676; font-weight: bold; }
+
+        /* ปุ่มรีเซ็ตข้อมูลรายโต๊ะ */
+        .btn-reset-single {
+            background-color: #424242;
+            color: #ddd;
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            margin-top: 15px;
+            border: 1px solid #555;
+            cursor: pointer;
+        }
+        .btn-reset-single:hover {
+            background-color: #555;
+            color: #fff;
+        }
+
+        .name-settings {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px; margin: 30px 0; border-top: 1px solid #333; padding-top: 20px;
+        }
+
+        /* ส่วนสรุปยอดรวมด้านล่าง */
+        .report-section {
+            background-color: #1a1a1a;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            max-width: 800px;
+            margin: 40px auto;
+            border: 1px solid #333;
+        }
+        .report-header {
+            background-color: #000;
+            display: inline-block;
+            padding: 8px 30px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .report-row {
+            margin: 15px 0;
+            font-size: 1.1rem;
+            color: #ddd;
+        }
+        .report-btn-reset {
+            background-color: #f1c40f;
+            color: #000;
+            padding: 10px 40px;
+            margin-top: 20px;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-section">
+        <h2>ระบบจับเวลา FN MODEL</h2>
+        <div class="controls-top">
+            <label>จำนวนโต๊ะลูกค้า:</label>
+            <input type="number" id="timerCount" value="7" min="1" max="50">
+            <button class="btn-start-all" onclick="controlAll('start')">เริ่มทั้งหมด</button>
+            <button class="btn-stop-all" onclick="controlAll('stop')">หยุดทั้งหมด</button>
+            <button class="btn-reset-all" onclick="controlAll('reset')">ล้างทั้งหมด</button>
+        </div>
+    </div>
+
+    <div id="timerContainer" class="timer-grid"></div>
+
+    <h3>เปลี่ยนชื่อตัวจับเวลา</h3>
+    <div id="nameInputs" class="name-settings"></div>
+
+    <hr style="border: 0.5px solid #333; margin: 40px 0;">
+
+    <div id="summaryContainer" class="summary-grid"></div>
+
+    <!-- ส่วนสรุปยอดขายทั้งหมด -->
+    <div class="report-section">
+        <div class="report-header">ลูกค้าทั้งหมด <span id="totalClients">0</span> โต๊ะ</div>
+        
+        <div class="report-row">
+            Class <span class="highlight">A</span> : <span id="countA">0</span> โต๊ะ &nbsp;&nbsp; 
+            Class <span class="highlight">B</span> : <span id="countB">0</span> โต๊ะ &nbsp;&nbsp; 
+            Class <span class="highlight">C</span> : <span id="countC">0</span> โต๊ะ
+        </div>
+
+        <div class="report-row">
+            รวมเวลาเล่นทั้งหมด <span class="highlight" id="totalHours">0</span> ชั่วโมง <span class="highlight" id="totalMinutes">0</span> นาที
+        </div>
+
+        <div class="report-row" style="font-size: 1.3rem;">
+            เป็นจำนวนเงินทั้งหมด <span class="highlight" id="grandTotal" style="font-size: 1.5rem; color: #00e676;">0</span> บาท
+        </div>
+
+        <button class="report-btn-reset" onclick="resetFullReport()">รีเซ็ตยอดขายวันนี้</button>
+    </div>
+
+    <script>
+        const CLASS_CONFIG = {
+            'A': { base: 50, perMin: 5 },
+            'B': { base: 30, perMin: 3 },
+            'C': { base: 10, perMin: 1 }
+        };
+
+        let reportData = {
+            totalClients: 0,
+            countA: 0,
+            countB: 0,
+            countC: 0,
+            totalTimeMs: 0,
+            grandTotal: 0
+        };
+
+        let timers = [];
+        const container = document.getElementById('timerContainer');
+        const summaryContainer = document.getElementById('summaryContainer');
+        const nameContainer = document.getElementById('nameInputs');
+        const countInput = document.getElementById('timerCount');
+
+        function createTimers() {
+            const count = parseInt(countInput.value);
+            container.innerHTML = '';
+            summaryContainer.innerHTML = '';
+            nameContainer.innerHTML = '';
+            timers = [];
+
+            for (let i = 1; i <= count; i++) {
+                const timerObj = {
+                    id: i,
+                    name: `โต๊ะที่ ${i}`,
+                    startTime: 0,
+                    elapsed: 0,
+                    isRunning: false,
+                    isFinished: false,
+                    interval: null,
+                    activeClass: null,
+                    summary: null
+                };
+
+                const card = document.createElement('div');
+                card.className = 'timer-card';
+                card.id = `card-${i}`;
+                
+                const sCard = document.createElement('div');
+                sCard.className = 'summary-card';
+                sCard.id = `summary-card-${i}`;
+
+                timers.push(timerObj);
+                renderTimerCard(card, timerObj);
+                renderSummaryCard(sCard, timerObj);
+
+                container.appendChild(card);
+                summaryContainer.appendChild(sCard);
+
+                const nameDiv = document.createElement('div');
+                nameDiv.innerHTML = `<label>[${i}]: </label><input type="text" placeholder="ระบุชื่อ..." oninput="updateName(${i}, this.value)">`;
+                nameContainer.appendChild(nameDiv);
+            }
+        }
+
+        function renderTimerCard(card, timer) {
+    let buttonHTML = '';
+
+    // ถ้าเช็คบิลไปแล้ว (ส่งข้อมูลลงข้างล่างแล้ว)
+    if (timer.isFinished) {
+        buttonHTML = `<div style="color: #f1c40f; padding: 10px; font-weight: bold; border: 1px dashed #f1c40f; border-radius: 6px; margin-top: 10px;">เช็คบิลแล้ว</div>`;
+    } 
+    // ถ้ากำลังรันอยู่
+    else if (timer.isRunning) {
+        buttonHTML = `<button class="btn-stop" onclick="stopTimer(${timer.id})">หยุด</button>`;
+    } 
+    // ถ้าหยุดชั่วคราว (และยังไม่ได้เช็คบิล)
+    else if (timer.elapsed > 0) {
+        buttonHTML = `<div class="button-group">
+            <button class="btn-resume" onclick="startTimer(${timer.id})">เล่นต่อ</button>
+            <button class="btn-clear" onclick="resetTimer(${timer.id})">ล้าง</button>
+        </div>`;
+    } 
+    // ถ้าเป็นโต๊ะว่าง
+    else {
+        buttonHTML = `<button class="btn-start btn-main" style="background-color: #2e7d32; color:white;" onclick="startTimer(${timer.id})">เริ่ม</button>`;
+    }
+
+    card.innerHTML = `
+        <div style="color:#888; font-size:0.9rem;">${timer.name}</div>
+        <div class="timer-display" id="display-${timer.id}" style="${timer.isFinished ? 'color: #555;' : ''}">${formatTime(timer.elapsed)}</div>
+        <div>${buttonHTML}</div>
+        <div class="class-selector" style="${timer.isFinished ? 'pointer-events: none; opacity: 0.5;' : ''}">
+            ${['A','B','C'].map(c => `
+                <div class="btn-class ${timer.activeClass === c ? 'active' : ''}" 
+                     onclick="selectClass(${timer.id}, '${c}')">${c}</div>
+            `).join('')}
+        </div>
+    `;
+}
+
+        function renderSummaryCard(card, timer) {
+            if (timer.isFinished && timer.summary) {
+                card.innerHTML = `
+                    <div class="summary-title">${timer.name}</div>
+                    <p>ใช้เวลาทั้งหมด <span class="highlight">${timer.summary.minutes}</span> นาที</p>
+                    <p>Class <span class="highlight">${timer.summary.class}</span></p>
+                    <p>ค่าเปิดโต๊ะ: <span class="highlight">${timer.summary.base}</span> บาท</p>
+                    <p>เป็นจำนวนเงินทั้งหมด <span class="highlight" style="font-size:1.2rem;">${timer.summary.total}</span> บาท</p>
+                    <button class="btn-reset-single" onclick="clearTableData(${timer.id})">ล้างข้อมูลโต๊ะนี้</button>
+                `;
+            } else if (timer.isRunning) {
+                card.innerHTML = `<div class="summary-title" style="background:#2e7d32">${timer.name}</div><p>กำลังเล่น</p>`;
+            } else {
+                card.innerHTML = `<div class="summary-title" style="background:#333">${timer.name}</div><p style="color:#555">ว่าง</p>`;
+            }
+        }
+
+        function clearTableData(id) {
+            const timer = timers.find(t => t.id === id);
+            timer.isFinished = false;
+            timer.summary = null;
+            timer.elapsed = 0;
+            timer.activeClass = null;
+            renderTimerCard(document.getElementById(`card-${id}`), timer);
+            renderSummaryCard(document.getElementById(`summary-card-${id}`), timer);
+        }
+
+        function formatTime(ms) {
+            const h = Math.floor(ms / 3600000).toString().padStart(2, '0');
+            const m = Math.floor((ms % 3600000) / 60000).toString().padStart(2, '0');
+            const s = Math.floor((ms % 60000) / 1000).toString().padStart(2, '0');
+            const d = Math.floor((ms % 1000) / 100);
+            return `${h}:${m}:${s}.${d}`;
+        }
+
+        function selectClass(id, className) {
+            const timer = timers.find(t => t.id === id);
+            timer.activeClass = (timer.activeClass === className) ? null : className;
+            renderTimerCard(document.getElementById(`card-${id}`), timer);
+        }
+
+        function startTimer(id) {
+            const timer = timers.find(t => t.id === id);
+            if (!timer.activeClass) { alert("โปรดเลือก Class ก่อนเริ่มครับ"); return; }
+            timer.isRunning = true;
+            timer.isFinished = false;
+            timer.startTime = Date.now() - timer.elapsed;
+            timer.interval = setInterval(() => {
+                timer.elapsed = Date.now() - timer.startTime;
+                document.getElementById(`display-${id}`).textContent = formatTime(timer.elapsed);
+            }, 100);
+            renderTimerCard(document.getElementById(`card-${id}`), timer);
+            renderSummaryCard(document.getElementById(`summary-card-${id}`), timer);
+        }
+
+        function stopTimer(id) {
+            const timer = timers.find(t => t.id === id);
+            clearInterval(timer.interval);
+            timer.isRunning = false;
+            renderTimerCard(document.getElementById(`card-${id}`), timer);
+            renderSummaryCard(document.getElementById(`summary-card-${id}`), timer);
+        }
+
+        function resetTimer(id) {
+    const timer = timers.find(t => t.id === id);
+    
+    // บัคแก้ตรงนี้: ถ้าคิดเงินไปแล้ว (isFinished เป็น true) ให้หยุดทำงาน ไม่ต้องนับยอดซ้ำ
+    if (timer.isFinished) return;
+
+    if (timer.activeClass) {
+        const config = CLASS_CONFIG[timer.activeClass];
+        const minutes = Math.ceil(timer.elapsed / 60000);
+        const total = config.base + (minutes * config.perMin);
+        
+        timer.summary = { minutes, class: timer.activeClass, base: config.base, total };
+        
+        // ล็อกสถานะว่าโต๊ะนี้คิดเงินเสร็จแล้ว
+        timer.isFinished = true;
+
+        // ส่งยอดไปรวมที่ Total Report (ครั้งเดียวเท่านั้น)
+        updateReport(timer.activeClass, timer.elapsed, total);
+    }
+    
+    clearInterval(timer.interval);
+    timer.isRunning = false;
+    
+    // อัปเดตการแสดงผล
+    renderTimerCard(document.getElementById(`card-${id}`), timer);
+    renderSummaryCard(document.getElementById(`summary-card-${id}`), timer);
+}
+
+        function updateReport(className, timeMs, money) {
+            reportData.totalClients++;
+            reportData['count' + className]++;
+            reportData.totalTimeMs += timeMs;
+            reportData.grandTotal += money;
+
+            document.getElementById('totalClients').textContent = reportData.totalClients;
+            document.getElementById('countA').textContent = reportData.countA;
+            document.getElementById('countB').textContent = reportData.countB;
+            document.getElementById('countC').textContent = reportData.countC;
+            document.getElementById('grandTotal').textContent = reportData.grandTotal.toLocaleString();
+
+            const totalMinsAll = Math.floor(reportData.totalTimeMs / 60000);
+            document.getElementById('totalHours').textContent = Math.floor(totalMinsAll / 60);
+            document.getElementById('totalMinutes').textContent = totalMinsAll % 60;
+        }
+
+        function resetFullReport() {
+            if(confirm("คุณต้องการรีเซ็ตยอดรวมการขายทั้งหมดใช่หรือไม่?")) {
+                reportData = { totalClients: 0, countA: 0, countB: 0, countC: 0, totalTimeMs: 0, grandTotal: 0 };
+                document.getElementById('totalClients').textContent = '0';
+                document.getElementById('countA').textContent = '0';
+                document.getElementById('countB').textContent = '0';
+                document.getElementById('countC').textContent = '0';
+                document.getElementById('totalHours').textContent = '0';
+                document.getElementById('totalMinutes').textContent = '0';
+                document.getElementById('grandTotal').textContent = '0';
+            }
+        }
+
+        function controlAll(action) {
+            timers.forEach(t => {
+                if (action === 'start') startTimer(t.id);
+                if (action === 'stop') stopTimer(t.id);
+                if (action === 'reset') resetTimer(t.id);
+            });
+        }
+
+        function updateName(id, val) {
+            const timer = timers.find(t => t.id === id);
+            timer.name = val || `โต๊ะที่ ${id}`;
+            renderTimerCard(document.getElementById(`card-${id}`), timer);
+            renderSummaryCard(document.getElementById(`summary-card-${id}`), timer);
+        }
+
+        countInput.addEventListener('change', createTimers);
+        createTimers();
+    </script>
+</body>
+</html>
